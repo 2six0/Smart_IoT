@@ -1,21 +1,22 @@
 #include <Arduino.h>
+#include <Secrets.h>
 #include <ESP8266WiFi.h>
 #include "Firebase-ESP8266-master/src/FirebaseESP8266.h"
 
-#define FIREBASE_HOST "https://iot-kuu.firebaseio.com/"
-#define FIREBASE_AUTH "5GUuI2hwFBMqDmwdhrcTEFuwZeLs8L89ZIW377BY"
+#define FIREBASE_HOST FB_Host
+#define FIREBASE_AUTH FB_Auth
 #define SSID "b4871e"
 #define PASS "277123586"
 
 FirebaseData fbdo;
 WiFiClient client;
 
-int Start;
-int dataRelay2;
+int Relay_1 = 16;
+int Relay_2 = 00;
 
-void sendDataInt(int time, String path_db, int value);
-int getDataInt(const String path_db, int a);
-void randomNumber(int a, int b);
+int Start;
+int dataRelay1;
+int dataRelay2;
 
 void setup()
 {
@@ -34,13 +35,30 @@ void setup()
 
   Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH);
   Firebase.reconnectWiFi(true);
+
+  pinMode(Relay_1, OUTPUT);
+  pinMode(Relay_2, OUTPUT);
 }
+
+void sendDataInt(int time, String path_db, int value);
+int getDataRelay_1(const String path_db);
+int getDataRelay_2(const String path_db);
+void mainRelay(int Relay, int Value);
+void randomNumber(int a, int b);
 
 void loop()
 {
-  randomNumber(30, 30);
-  sendDataInt(2000, "/Relay_1", Start);
-  getDataInt("/Relay_2", dataRelay2);
+  //randomNumber(30, 30);
+  //sendDataInt(2000, "/Relay_1", Start);
+  getDataRelay_1("Relay_1");
+  getDataRelay_2("Relay_2");
+  Serial.println(" ");
+  Serial.println(dataRelay1);
+  Serial.println(dataRelay2);
+  Serial.println(" ");
+  //getDataInt("/Relay_2", dataRelay2);
+  mainRelay(Relay_1, dataRelay1);
+  mainRelay(Relay_2,dataRelay2);
 }
 
 void sendDataInt(int time, const String path_db, int value)
@@ -51,16 +69,56 @@ void sendDataInt(int time, const String path_db, int value)
   delay(time);
 }
 
-int getDataInt(const String path_db, int a){
-  if (Firebase.getInt(fbdo, path_db)) {
-    a = fbdo.intData();
-    Serial.print(F("Data Yang Diterima Adalah = "));
-    Serial.println(a);
-    return a;
-    }
-    else{
-      Serial.println(fbdo.errorReason());
-    }
+int getDataRelay_1(const String path_db)
+{
+  if (Firebase.getInt(fbdo, path_db))
+  {
+    dataRelay1 = fbdo.intData();
+    Serial.print(F("Status Relay Adalah = "));
+    Serial.println(dataRelay1);
+  }
+  else
+  {
+    Serial.println(fbdo.errorReason());
+  }
+  return dataRelay1;
+}
+
+int getDataRelay_2(const String path_db)
+{
+  if (Firebase.getInt(fbdo, path_db))
+  {
+    dataRelay2 = fbdo.intData();
+    Serial.print(F("Status Relay Adalah = "));
+    Serial.println(dataRelay2);
+  }
+  else
+  {
+    Serial.println(fbdo.errorReason());
+  }
+  return dataRelay2;
+}
+
+void mainRelay(int Relay, int Value)
+{
+  if (Value == 1)
+  {
+    digitalWrite(Relay, HIGH);
+    Serial.print("Relay pin ke ");
+    Serial.print(Relay);
+    Serial.println(" Aktif");
+  }
+  else if (Value == 0)
+  {
+    digitalWrite(Relay, LOW);
+    Serial.print("Relay ke ");
+    Serial.print(Relay);
+    Serial.println("Tidak Aktif");
+  }
+  else
+  {
+    Serial.println("Tidak Menerima Data");
+  }
 }
 
 void randomNumber(int a, int b)
